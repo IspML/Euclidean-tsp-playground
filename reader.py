@@ -13,7 +13,7 @@ def read_xy(file_path):
             if "EOF" in line or "-1" in line:
                 break
             xy.append((float(line[1]), float(line[2])))
-    return xy, [i for i in range(len(xy))]
+    return xy
 
 def read_tour(file_path):
     tour = []

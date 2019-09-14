@@ -7,6 +7,11 @@ def distance(xy, i, j):
     dy = xy[i][1] - xy[j][1]
     return int((dx ** 2 + dy ** 2) ** 0.5 + 0.5)
 
+def midpoint(xy, i, j):
+    dx = xy[j][0] - xy[i][0]
+    dy = xy[j][1] - xy[i][1]
+    return (xy[i][0] + dx / 2.0, xy[i][1] + dy / 2.0)
+
 def tour_length(xy, ii):
     assert(len(xy) > 1)
     assert(len(ii) > 1)
