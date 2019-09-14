@@ -3,6 +3,7 @@
 import reader
 import basic
 import random
+import random_util
 import math
 from matplotlib import pyplot as plt
 
@@ -25,6 +26,10 @@ class Tour:
             num -= 1
             self.n -= 1
         return popped
+    def insert_new_node(self, xy):
+        i = len(self.xy)
+        self.xy.append(xy)
+        self.insert(i)
     def insert(self, i):
         min_si = None
         min_cost = math.inf
@@ -32,6 +37,8 @@ class Tour:
             cost = basic.distance(self.xy, self.node_id(si), i)
             cost += basic.distance(self.xy, self.node_id(si + 1), i)
             cost -= self.next_length(si)
+            print(cost)
+            assert(cost >= -1)
             if cost < min_cost:
                 min_cost = cost
                 min_si = si
@@ -60,11 +67,8 @@ class Tour:
     def prev_id(self, sequence_id):
         return self.node_ids[sequence_id - 1]
     def next_length(self, si):
-        assert(si < self.n)
-        i = self.node_ids[si]
-        sj = (si + 1) % self.n
-        j = self.node_ids[sj]
-        return basic.distance(self.xy, i, j)
+        assert(si < self.n and si >= 0)
+        return basic.distance(self.xy, self.node_id(si), self.node_id(si + 1))
     def length(self, si, sj):
         si = si % self.n
         sj = sj % self.n
@@ -75,6 +79,21 @@ class Tour:
         si, sj = min(si, sj), max(si, sj)
         assert(sj - si > 1)
         self.node_ids[si + 1 : sj + 1] = self.node_ids[sj : si : -1]
+        assert(len(self.node_ids) == self.n)
+    def double_bridge_perturbation(self):
+        # first make two cycles, then merge.
+        si = random.randrange(self.n)
+        sj = random_util.restricted(self.n, si + 3, 5)
+        si, sj = (min(si, sj), max(si, sj))
+        new_cycle = self.node_ids[si + 1 : sj + 1]
+        # now pick new location in each cycle for merge locations.
+        new_si = random.randrange(len(new_cycle))
+        # rearrange new_cycle so that it can be spliced back.
+        if new_si + 1 < len(new_cycle):
+            new_cycle = new_cycle[new_si + 1 : len(new_cycle)] + new_cycle[ : new_si + 1]
+        self.node_ids[si + 1 : sj + 1] = []
+        si = random.randrange(len(self.node_ids))
+        self.node_ids[si : si + 1] = [self.node_ids[si]] + new_cycle
         assert(len(self.node_ids) == self.n)
     def tour_length(self):
         total = 0

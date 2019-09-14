@@ -2,6 +2,7 @@
 
 import reader
 from tour import Tour
+import sys
 
 class TwoOpt:
     def __init__(self, xy):
@@ -16,13 +17,20 @@ class TwoOpt:
                 cost = self.tour.length(si, sj) + self.tour.length(si + 1, sj + 1)
                 improvement = igain + jgain - cost
                 if improvement > 0:
+                    print("swap: " + str(si) + ", " + str(sj))
+                    self.tour.show(call_show = False)
                     self.tour.swap(si, sj)
+                    self.tour.show(call_show = True, markers = "r:^")
+                    sys.exit()
                     return improvement
         return 0
     def optimize(self):
         original = self.tour.tour_length()
-        while self.improve_once() > 0:
-            pass
+        improvement = self.improve_once()
+        while improvement > 0:
+            print(improvement)
+            print(self.tour.tour_length())
+            continue
         optimized = self.tour.tour_length()
         improvement = original - optimized
         assert(improvement >= 0)

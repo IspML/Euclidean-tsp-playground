@@ -1,4 +1,4 @@
-#/usr/bin/env python3
+#!/usr/bin/env python3
 
 import reader
 from tour import Tour
@@ -11,11 +11,16 @@ def popt(t, pops = 1):
     # pop, then optimize.
     prepop = t.tour.tour_length()
     popped = []
+    reduction = 0
     for _ in range(pops):
         popped += t.tour.random_pop()
-        assert(t.optimize() >= 0)
-    reduction = prepop - t.tour.tour_length()
-    assert(reduction >= 0)
+        iterative_reduction = t.optimize() >= 0
+        assert(iterative_reduction >= 0)
+        reduction += iterative_reduction
+    if reduction == 0:
+        print("no changes made during pop; aborting.")
+        t.tour.reset(original)
+        return 0
     for p in popped:
         t.tour.insert(p)
         t.optimize()
@@ -49,9 +54,9 @@ if __name__ == "__main__":
     t = TwoOpt(xy)
     t.optimize()
 
-    for i in range(200):
-        #print(sequence_popt(t, 10))
-        print(popt(t, 4))
+    for i in range(50):
+        #print(sequence_popt(t, 2))
+        print(popt(t, 5))
         print(t.tour.tour_length())
 
     print("final length: " + str(t.tour.tour_length()))
