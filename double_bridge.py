@@ -6,7 +6,6 @@ import reader
 xy = reader.read_xy("input/berlin52.tsp")
 t = TwoOpt(xy)
 t.optimize()
-t.tour.show(call_show = False, markers = "ro:")
 print("local optimum: " + str(t.tour.tour_length()))
 
 def double_bridge(t):

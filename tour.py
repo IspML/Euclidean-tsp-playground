@@ -57,28 +57,34 @@ class Tour:
                 new_xy.append(basic.midpoint(self.xy, i, j))
         return new_xy, new_node_ids
 
+    # checks for index validity.
     def node_id(self, sequence_id):
-        sequence_id = (sequence_id + 1) % self.n
+        if sequence_id < 0:
+            sequence_id += self.n
+        elif sequence_id >= self.n:
+            sequence_id -= self.n
         return self.node_ids[sequence_id]
-    def next_s(self, sequence_id):
-        return (sequence_id + 1) % self.n
     def next_id(self, sequence_id):
-        return self.node_ids[self.next_s(sequence_id)]
+        return self.node_id(sequence_id + 1)
     def prev_id(self, sequence_id):
-        return self.node_ids[sequence_id - 1]
+        return self.node_id(sequence_id - 1)
     def next_length(self, si):
         assert(si < self.n and si >= 0)
         return basic.distance(self.xy, self.node_id(si), self.node_id(si + 1))
     def length(self, si, sj):
-        si = si % self.n
-        sj = sj % self.n
-        i = self.node_ids[si]
-        j = self.node_ids[sj]
+        i = self.node_id(si)
+        j = self.node_id(sj)
         return basic.distance(self.xy, i, j)
     def swap(self, si, sj):
         si, sj = min(si, sj), max(si, sj)
         assert(sj - si > 1)
         self.node_ids[si + 1 : sj + 1] = self.node_ids[sj : si : -1]
+        self.check()
+    def check(self):
+        seen = set()
+        for n in self.node_ids:
+            assert(n not in seen)
+            seen.add(n)
         assert(len(self.node_ids) == self.n)
     def double_bridge_perturbation(self):
         # first make two cycles, then merge.
