@@ -17,10 +17,14 @@ class TwoOpt:
                 cost = self.tour.length(si, sj) + self.tour.length(si + 1, sj + 1)
                 improvement = igain + jgain - cost
                 if improvement > 0:
-                    print("swap: " + str(si) + ", " + str(sj))
-                    self.tour.show(call_show = False)
+                    print("before: " + str(si) + ", " + str(sj))
+                    print("before: " + str(igain) + ", " + str(jgain))
+                    self.tour.plot()
+                    self.tour.plot_seq()
                     self.tour.swap(si, sj)
-                    self.tour.show(call_show = True, markers = "r:^")
+                    print("after: " + str(cost))
+                    self.tour.plot("r^:")
+                    self.show()
                     sys.exit()
                     return improvement
         return 0
@@ -29,8 +33,7 @@ class TwoOpt:
         improvement = self.improve_once()
         while improvement > 0:
             print(improvement)
-            print(self.tour.tour_length())
-            continue
+            improvement = self.improve_once()
         optimized = self.tour.tour_length()
         improvement = original - optimized
         assert(improvement >= 0)

@@ -100,15 +100,18 @@ class Tour:
         for si in range(self.n):
             total += self.next_length(si)
         return total
-    def show(self, call_show = True, markers = "x-"):
+    def plot(self, markers = "x-"):
         xy = [self.xy[self.node_id(i)] for i in range(self.n)]
         x = [x_[0] for x_ in xy]
         x.append(x[0])
         y = [x_[1] for x_ in xy]
         y.append(y[0])
         plt.plot(x, y, markers)
-        if call_show:
-            plt.show()
+    def plot_seq(self):
+        for si in range(self.n):
+            plt.text(self.xy[si][0], self.xy[si][1], str(si))
+    def show(self):
+        plt.show()
 
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")

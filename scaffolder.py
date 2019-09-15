@@ -9,7 +9,6 @@ import sys
 xy = reader.read_xy("input/berlin52.tsp")
 t = TwoOpt(xy)
 t.optimize()
-sys.exit()
 t.tour.show(call_show = False)
 print("local optimum: " + str(t.tour.tour_length()))
 
