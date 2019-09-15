@@ -5,26 +5,37 @@ import reader
 from two_opt import TwoOpt
 import random_util
 import sys
+from box import Box
 
 xy = reader.read_xy("input/berlin52.tsp")
 t = TwoOpt(xy)
 t.optimize()
-t.tour.show(call_show = False)
-print("local optimum: " + str(t.tour.tour_length()))
+t.tour.plot()
 
 def generate_random_midpoint(tour):
     si, sj = random_util.random_pair(tour.n, pad = 1)
     midpoint = basic.midpoint(tour.xy, tour.node_id(si), tour.node_id(sj))
     tour.insert_new_node(midpoint)
 
+best = t.tour.node_ids[:]
+best_length = t.tour.tour_length()
+print("local optimum: " + str(best_length))
+b = Box(t.tour.xy)
 
-for i in range(50):
-    generate_random_midpoint(t.tour)
-    t.tour.show(call_show = True, markers = "ro:")
-    continue
-    t.tour.randomize()
+points = 25
+
+for i in range(10000):
+    for p in range(points):
+        t.tour.insert_new_node(b.random_xy())
     t.optimize()
-    print("local optimum: " + str(t.tour.tour_length()))
-
-
+    for p in range(points):
+        t.tour.remove_last_xy()
+    new_length = t.tour.tour_length()
+    if new_length < best_length:
+        t.optimize()
+        best_length = t.tour.tour_length()
+        best = t.tour.node_ids[:]
+        print("best length: " + str(best_length))
+    else:
+        t.tour.reset(best)
 

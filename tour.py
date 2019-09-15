@@ -26,6 +26,12 @@ class Tour:
             num -= 1
             self.n -= 1
         return popped
+    def remove_last_xy(self):
+        i = len(self.xy) - 1
+        self.node_ids.remove(i)
+        self.n -= 1
+        self.xy.pop()
+        self.check()
     def insert_new_node(self, xy):
         i = len(self.xy)
         self.xy.append(xy)
@@ -37,7 +43,7 @@ class Tour:
             cost = basic.distance(self.xy, self.node_id(si), i)
             cost += basic.distance(self.xy, self.node_id(si + 1), i)
             cost -= self.next_length(si)
-            print(cost)
+            #print(cost)
             assert(cost >= -1)
             if cost < min_cost:
                 min_cost = cost
@@ -115,7 +121,7 @@ class Tour:
         plt.plot(x, y, markers)
     def plot_seq(self):
         for si in range(self.n):
-            plt.text(self.xy[si][0], self.xy[si][1], str(si))
+            plt.text(self.xy[self.node_id(si)][0], self.xy[self.node_id(si)][1], str(si))
     def show(self):
         plt.show()
 
