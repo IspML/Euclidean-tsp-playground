@@ -19,14 +19,21 @@ if __name__ == "__main__":
     t = TwoOpt(xy)
     t.optimize()
     t.tour.plot()
+    t.tour.plot_seq()
+
+    edges = mst.prim(t.tour.xy)
+
+    diff_edges = mst.get_new_mst_edges(t.tour, edges)
+    print("diff edges from 2-opt: " + str(len(diff_edges)))
 
     opt = reader.read_tour("input/berlin52.opt.tour")
     t.tour.reset(opt)
 
     t.tour.plot(markers = "r^:")
 
-    edges = mst.prim(t.tour.xy)
-    plot_edges(t.tour, edges)
+    diff_edges = mst.get_new_mst_edges(t.tour, edges)
+    print("diff edges from optimal: " + str(len(diff_edges)))
+    plot_edges(t.tour, diff_edges)
 
     t.tour.show()
 

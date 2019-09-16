@@ -126,7 +126,12 @@ class Tour:
         plt.show()
 
     def connectivity(self):
-        return [(self.node_id(i - 1), self.node_id(i + 1)) for i in range(self.n)]
+        c = [[]] * self.n
+        for i in range(self.n):
+            c[self.node_id(i)] = (self.node_id(i - 1), self.node_id(i + 1))
+        for tup in c:
+            assert(tup)
+        return c
 
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")

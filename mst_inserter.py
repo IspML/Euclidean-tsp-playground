@@ -22,36 +22,19 @@ print("local optimum: " + str(best_length))
 points = 0
 
 mst_edges = mst.prim(t.tour.xy)
+
 mst_connectivity = [[]] * len(t.tour.xy)
-print(mst_connectivity)
 for e in mst_edges:
     mst_connectivity[e[0]].append(e[1])
     mst_connectivity[e[1]].append(e[0])
 
-def get_new_mst_edges():
-    c = t.tour.connectivity()
-    print("tour conn")
-    for i in range(len(c)):
-        print(str(i) + " -> " + str(c[i]))
-    new_edges = []
-    for e in mst_edges:
-        print(e)
-        if e[1] in c[e[0]]:
-            print(c[e[1]])
-            assert(e[0] in c[e[1]])
-            continue
-        new_edges.append(e)
-    return new_edges
+new_edges = mst.get_new_mst_edges(t.tour, mst_edges)
 
-new_edges = get_new_mst_edges()
-
-plot.plot_edges(t.tour, mst_edges, "k:x")
 plot.plot_edges(t.tour, new_edges, "g:^")
 t.tour.show()
 
 def get_mst_points(n):
     pass
-
 
 for i in range(50):
     for _ in range(points):

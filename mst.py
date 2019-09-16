@@ -4,6 +4,16 @@ import basic
 import reader
 import math
 
+def get_new_mst_edges(tour, mst_edges):
+    c = tour.connectivity()
+    new_edges = []
+    for e in mst_edges:
+        if e[1] in c[e[0]]:
+            assert(e[0] in c[e[1]])
+            continue
+        new_edges.append(e)
+    return new_edges
+
 def compute_sorted_edges(xy, node_id):
     edges = []
     for i in range(len(xy)):
