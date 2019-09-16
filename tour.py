@@ -121,9 +121,12 @@ class Tour:
         plt.plot(x, y, markers)
     def plot_seq(self):
         for si in range(self.n):
-            plt.text(self.xy[self.node_id(si)][0], self.xy[self.node_id(si)][1], str(si))
+            plt.text(self.xy[self.node_id(si)][0], self.xy[self.node_id(si)][1], str(si) + ", " + str(self.node_id(si)))
     def show(self):
         plt.show()
+
+    def connectivity(self):
+        return [(self.node_id(i - 1), self.node_id(i + 1)) for i in range(self.n)]
 
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")

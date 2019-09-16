@@ -22,9 +22,9 @@ best_length = t.tour.tour_length()
 print("local optimum: " + str(best_length))
 b = Box(t.tour.xy)
 
-points = 25
+points = 1
 
-for i in range(10000):
+for i in range(50):
     for p in range(points):
         t.tour.insert_new_node(b.random_xy())
     t.optimize()
