@@ -3,6 +3,7 @@
 import reader
 from tour import Tour
 from two_opt import TwoOpt
+import deleter
 
 def popt(t, pops = 1):
     ref_length = t.tour.tour_length()
@@ -42,7 +43,7 @@ def sequence_popt(t, pops = 1):
     assert(reduction >= 0)
     for p in popped:
         t.tour.insert(p)
-        t.optimize()
+    t.optimize()
     improvement = ref_length - t.tour.tour_length()
     if improvement < 0:
         t.tour.reset(original)
@@ -51,12 +52,16 @@ def sequence_popt(t, pops = 1):
 
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")
+    xy = reader.read_xy("input/xqf131.tsp")
     t = TwoOpt(xy)
     t.optimize()
 
-    for i in range(50):
-        #print(sequence_popt(t, 2))
-        print(popt(t, 5))
+    #deleter.deleter(t)
+
+    for i in range(1000):
+        print(i)
+        print(sequence_popt(t, 10))
+        #print(popt(t, 5))
         print(t.tour.tour_length())
 
     print("final length: " + str(t.tour.tour_length()))
@@ -71,3 +76,4 @@ if __name__ == "__main__":
     t.tour.show(call_show = True, markers = "xr:")
     t.optimize()
     """
+

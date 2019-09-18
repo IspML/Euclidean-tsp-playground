@@ -12,8 +12,8 @@ class Tour:
         self.xy = xy
         self.reset([x for x in range(len(xy))])
     def reset(self, node_ids):
-        self.node_ids = node_ids
-        self.n = len(node_ids)
+        self.node_ids = node_ids[:]
+        self.n = len(self.node_ids)
     def randomize(self):
         random.shuffle(self.node_ids)
     def random_pop(self, num = 1):
@@ -36,6 +36,10 @@ class Tour:
         i = len(self.xy)
         self.xy.append(xy)
         self.insert(i)
+
+    def pop(self, si):
+        self.n -= 1
+        return self.node_ids.pop(self.si(si))
     def insert(self, i):
         min_si = None
         min_cost = math.inf
@@ -62,14 +66,18 @@ class Tour:
                 new_node_ids.append(len(new_xy))
                 new_xy.append(basic.midpoint(self.xy, i, j))
         return new_xy, new_node_ids
+    def midpoint(self, si, sj):
+        return basic.midpoint(self.xy, self.node_id(si), self.node_id(sj))
 
-    # checks for index validity.
-    def node_id(self, sequence_id):
+    def si(self, sequence_id):
         if sequence_id < 0:
             sequence_id += self.n
         elif sequence_id >= self.n:
             sequence_id -= self.n
-        return self.node_ids[sequence_id]
+        return sequence_id
+    # checks for index validity.
+    def node_id(self, sequence_id):
+        return self.node_ids[self.si(sequence_id)]
     def next_id(self, sequence_id):
         return self.node_id(sequence_id + 1)
     def prev_id(self, sequence_id):
@@ -132,6 +140,17 @@ class Tour:
         for tup in c:
             assert(tup)
         return c
+
+    def validate(self):
+        seen = set()
+        assert(len(self.xy) == self.n)
+        assert(len(self.node_ids) == self.n)
+        for i in self.node_ids:
+            assert(i not in seen)
+            assert(i < self.n)
+            assert(i >= 0)
+            seen.add(i)
+        assert(len(seen) == self.n)
 
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")
