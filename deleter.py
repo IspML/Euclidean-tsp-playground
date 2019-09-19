@@ -41,7 +41,7 @@ if __name__ == "__main__":
     t.optimize()
 
     deleter(t)
-    inserter.inserter(t)
+    #inserter.inserter(t)
 
     t.tour.validate()
     print("final length: " + str(t.tour.tour_length()))

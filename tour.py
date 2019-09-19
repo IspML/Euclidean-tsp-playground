@@ -140,6 +140,14 @@ class Tour:
         for tup in c:
             assert(tup)
         return c
+    def edges(self):
+        ee = set()
+        prev = self.node_ids[-1]
+        for i in self.node_ids:
+            e = (min(i, prev), max(i, prev))
+            ee.add(e)
+            prev = i
+        return ee
 
     def validate(self):
         seen = set()

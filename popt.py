@@ -46,7 +46,11 @@ def sequence_popt(t, pops = 1):
     t.optimize()
     improvement = ref_length - t.tour.tour_length()
     if improvement < 0:
+        #t.tour.plot(":rx")
         t.tour.reset(original)
+        #t.tour.plot(":bx")
+        print("improvement: " + str(improvement))
+        #t.tour.show()
     improvement = ref_length - t.tour.tour_length()
     return improvement
 
@@ -60,7 +64,7 @@ if __name__ == "__main__":
 
     for i in range(1000):
         print(i)
-        print(sequence_popt(t, 10))
+        print(sequence_popt(t, 15))
         #print(popt(t, 5))
         print(t.tour.tour_length())
 
