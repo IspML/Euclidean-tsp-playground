@@ -11,6 +11,7 @@ import popt
 import math
 from itertools import combinations
 import basic
+from matplotlib import pyplot as plt
 
 def count_num_tries(n):
     combos = 0
@@ -22,14 +23,8 @@ def count_num_tries(n):
 def edge_diff(tour, other):
     edges = tour.edges()
     other_edges = other.edges()
-    print("edges to export:")
     diff = edges - other_edges
-    for e in diff:
-        print(e)
-    print("edges to import:")
     other_diff = other_edges - edges
-    for e in other_diff:
-        print(e)
     assert(len(diff) == len(other_diff))
     return diff, other_diff
 
@@ -96,7 +91,7 @@ def try_n_set(xy, edges, other_edges, n):
 def try_all_sets(xy, edges, other_edges):
     assert(len(edges) == len(other_edges))
     candidates = []
-    for i in range(3, len(edges)):
+    for i in range(3, len(edges) + 1):
         candidate = try_n_set(xy, edges, other_edges, i)
         if candidate:
             candidates.append(candidate)
@@ -114,6 +109,14 @@ def list_from_adjacents(adjacents):
             return None
     return ordered
 
+def plot_connectivity(xy, cc):
+    for i in range(len(cc)):
+        c = cc[i]
+        for j in c:
+            x = [xy[i][0], xy[j][0]]
+            y = [xy[i][1], xy[j][1]]
+            plt.plot(x, y, "x-")
+
 def feasible(tour, export_edges, import_edges):
     cc = tour.connectivity()
     for e in export_edges:
@@ -121,11 +124,16 @@ def feasible(tour, export_edges, import_edges):
         cc[e[1]].remove(e[0])
     for e in import_edges:
         cc[e[0]].append(e[1])
+        if len(cc[e[0]]) > 2:
+            return None
         cc[e[1]].append(e[0])
+        if len(cc[e[1]]) > 2:
+            return None
         cc[e[0]].sort()
         cc[e[1]].sort()
     for c in cc:
-        assert(len(c) == 2)
+        if len(c) != 2:
+            return None
     return list_from_adjacents(cc)
 
 if __name__ == "__main__":
@@ -137,9 +145,9 @@ if __name__ == "__main__":
 
     t2 = TwoOpt(xy)
     t2.tour.reset(t1.tour.node_ids)
-    for i in range(20):
+    for i in range(50):
         t2.tour.reset(t1.tour.node_ids)
-        improvement, new_tour = popt.sequence_popt(t2, 15)
+        improvement = popt.sequence_popt(t2, 10)
         print("new_tour length: " + str(t2.tour.tour_length()))
         exportable, importable = edge_diff(t1.tour, t2.tour)
         candidates = try_all_sets(xy, exportable, importable)
@@ -148,8 +156,9 @@ if __name__ == "__main__":
             if node_ids:
                 t1.tour.reset(node_ids)
                 t1.tour.validate()
-                print(c)
-                print("merged length: " + str(t1.tour.tour_length()))
+                print("improved merged length: " + str(t1.tour.tour_length()))
+                t1.optimize()
+                print("post-merge hill climb: " + str(t1.tour.tour_length()))
                 break
 
         """
@@ -157,5 +166,5 @@ if __name__ == "__main__":
         t2.tour.plot(markers="x:b")
         t2.tour.show()
         """
-
+    print("final tour length: " + str(t1.tour.tour_length()))
 

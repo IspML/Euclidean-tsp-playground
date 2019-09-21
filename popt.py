@@ -45,10 +45,7 @@ def sequence_popt(t, pops = 1):
         t.tour.insert(p)
     t.optimize()
     improvement = ref_length - t.tour.tour_length()
-    new_tour = t.tour.node_ids[:]
-    if improvement < 0:
-        t.tour.reset(original)
-    return improvement, new_tour
+    return improvement
 
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")
