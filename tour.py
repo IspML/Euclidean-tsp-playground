@@ -136,7 +136,7 @@ class Tour:
     def connectivity(self):
         c = [[]] * self.n
         for i in range(self.n):
-            c[self.node_id(i)] = (self.node_id(i - 1), self.node_id(i + 1))
+            c[self.node_id(i)] = [self.node_id(i - 1), self.node_id(i + 1)]
         for tup in c:
             assert(tup)
         return c
