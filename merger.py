@@ -68,7 +68,12 @@ def calculate_gain(xy, export_edges, import_edges):
         gain -= edge_cost(xy, e)
     return gain
 
+MAX_CANDIDATE_CHECKS = 1000000
+candidate_checks = 0
+
 def try_n_set(xy, edges, other_edges, n):
+    global candidate_checks
+    global MAX_CANDIDATE_CHECKS
     assert(len(edges) == len(other_edges))
     cc = combinations(edges, n)
     best_export = None
@@ -82,17 +87,24 @@ def try_n_set(xy, edges, other_edges, n):
                 best_export = c
                 best_import = matched_set
                 best_gain = gain
+        candidate_checks += 1
+        if candidate_checks >= MAX_CANDIDATE_CHECKS:
+            print("MAX_CANDIDATE_CHECKS reached.")
+            break
     if best_gain <= 0:
         return None
     return best_gain, best_export, best_import
 
 def try_all_sets(xy, edges, other_edges):
+    global candidate_checks
+    global MAX_CANDIDATE_CHECKS
     costs = [edge_cost(xy, e) for e in edges]
     costs.sort(reverse = True)
     other_costs = [edge_cost(xy, e) for e in other_edges]
     other_costs.sort()
     assert(len(edges) == len(other_edges))
     candidates = []
+    candidate_checks = 0
     for i in range(3, len(edges) + 1):
         max_export = sum(costs[:i])
         min_import = sum(other_costs[:i])
@@ -101,6 +113,8 @@ def try_all_sets(xy, edges, other_edges):
         candidate = try_n_set(xy, edges, other_edges, i)
         if candidate:
             candidates.append(candidate)
+        if candidate_checks >= MAX_CANDIDATE_CHECKS:
+            break
     candidates.sort(reverse = True)
     return candidates
 

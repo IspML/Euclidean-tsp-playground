@@ -20,11 +20,14 @@ for i in range(1000):
     print("iteration " + str(i) + " best tour length: " + str(best_length))
     test_tour_length = test_climber.tour.tour_length()
     print("iteration " + str(i) + " test tour length: " + str(test_tour_length))
+    """
     if test_tour_length < best_length:
         best_climber.tour.reset(test_climber.tour.node_ids)
         best_length = best_climber.tour.tour_length()
         continue
+    """
     merger.merge(best_climber, test_climber.tour.node_ids)
     best_length = best_climber.tour.tour_length()
+
 print("final tour length: " + str(best_length))
 
