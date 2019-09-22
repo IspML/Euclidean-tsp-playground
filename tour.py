@@ -116,10 +116,7 @@ class Tour:
         self.node_ids[si : si + 1] = [self.node_ids[si]] + new_cycle
         assert(len(self.node_ids) == self.n)
     def tour_length(self):
-        total = 0
-        for si in range(self.n):
-            total += self.next_length(si)
-        return total
+        return basic.tour_length(self.xy, self.node_ids)
     def plot(self, markers = "x-"):
         xy = [self.xy[self.node_id(i)] for i in range(self.n)]
         x = [x_[0] for x_ in xy]
@@ -141,13 +138,7 @@ class Tour:
             assert(tup)
         return c
     def edges(self):
-        ee = set()
-        prev = self.node_ids[-1]
-        for i in self.node_ids:
-            e = (min(i, prev), max(i, prev))
-            ee.add(e)
-            prev = i
-        return ee
+        return basic.edges_from_order(self.node_ids)
 
     def validate(self):
         seen = set()

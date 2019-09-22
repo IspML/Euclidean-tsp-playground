@@ -56,10 +56,13 @@ if __name__ == "__main__":
     #deleter.deleter(t)
 
     for i in range(1000):
-        print(i)
-        print(sequence_popt(t, 15))
-        #print(popt(t, 5))
-        print(t.tour.tour_length())
+        original = t.tour.node_ids[:]
+        improvement = sequence_popt(t, 15)
+        print("iteration " + str(i) + " improvement: " + str(improvement))
+        if improvement <= 0:
+            t.tour.reset(original)
+        else:
+            print("improved tour length: " + str(t.tour.tour_length()))
 
     print("final length: " + str(t.tour.tour_length()))
 

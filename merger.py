@@ -20,9 +20,7 @@ def count_num_tries(n):
         combos += nf / math.factorial(n - r) / math.factorial(r)
     print("combos: " + str(combos))
 
-def edge_diff(tour, other):
-    edges = tour.edges()
-    other_edges = other.edges()
+def edge_diff(edges, other_edges):
     diff = edges - other_edges
     other_diff = other_edges - edges
     assert(len(diff) == len(other_diff))
@@ -89,9 +87,17 @@ def try_n_set(xy, edges, other_edges, n):
     return best_gain, best_export, best_import
 
 def try_all_sets(xy, edges, other_edges):
+    costs = [edge_cost(xy, e) for e in edges]
+    costs.sort(reverse = True)
+    other_costs = [edge_cost(xy, e) for e in other_edges]
+    other_costs.sort()
     assert(len(edges) == len(other_edges))
     candidates = []
     for i in range(3, len(edges) + 1):
+        max_export = sum(costs[:i])
+        min_import = sum(other_costs[:i])
+        if max_export <= min_import:
+            continue
         candidate = try_n_set(xy, edges, other_edges, i)
         if candidate:
             candidates.append(candidate)
@@ -136,35 +142,43 @@ def feasible(tour, export_edges, import_edges):
             return None
     return list_from_adjacents(cc)
 
+def merge(climber, other_node_ids):
+    current_tour_length = climber.tour.tour_length()
+    new_tour_length = basic.tour_length(climber.tour.xy, other_node_ids)
+    THRESHOLD = 1.02
+    if float(new_tour_length) / float(current_tour_length) > THRESHOLD:
+        return
+    print("attempting merge")
+    exportable, importable = edge_diff(climber.tour.edges(), basic.edges_from_order(other_node_ids))
+    candidates = try_all_sets(climber.tour.xy, exportable, importable)
+    for c in candidates:
+        node_ids = feasible(climber.tour, c[1], c[2])
+        if node_ids:
+            climber.tour.reset(node_ids)
+            climber.tour.validate()
+            print("improved merged length: " + str(climber.tour.tour_length()))
+            climber.optimize()
+            print("post-merge hill climb: " + str(climber.tour.tour_length()))
+            return
+
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")
+    xy = reader.read_xy("input/xqf131.tsp")
     t1 = TwoOpt(xy)
     t1.optimize()
     deleter.deleter(t1)
     print("tour1 length: " + str(t1.tour.tour_length()))
 
     t2 = TwoOpt(xy)
-    t2.tour.reset(t1.tour.node_ids)
-    for i in range(50):
+    for i in range(1000):
         t2.tour.reset(t1.tour.node_ids)
-        improvement = popt.sequence_popt(t2, 10)
-        print("new_tour length: " + str(t2.tour.tour_length()))
-        exportable, importable = edge_diff(t1.tour, t2.tour)
-        candidates = try_all_sets(xy, exportable, importable)
-        for c in candidates:
-            node_ids = feasible(t1.tour, c[1], c[2])
-            if node_ids:
-                t1.tour.reset(node_ids)
-                t1.tour.validate()
-                print("improved merged length: " + str(t1.tour.tour_length()))
-                t1.optimize()
-                print("post-merge hill climb: " + str(t1.tour.tour_length()))
-                break
-
-        """
-        t1.tour.plot(markers="x:r")
-        t2.tour.plot(markers="x:b")
-        t2.tour.show()
-        """
+        improvement = popt.sequence_popt(t2, 40)
+        new_tour_length = t2.tour.tour_length()
+        print("iteration " + str(i) + " best tour length: " + str(t1.tour.tour_length()))
+        print("iteration " + str(i) + " new_tour length: " + str(new_tour_length))
+        if new_tour_length < t1.tour.tour_length():
+            t1.tour.reset(t2.tour.node_ids)
+            continue
+        merge(t1, t2.tour.node_ids)
     print("final tour length: " + str(t1.tour.tour_length()))
 

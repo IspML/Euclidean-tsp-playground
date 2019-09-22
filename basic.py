@@ -12,16 +12,25 @@ def midpoint(xy, i, j):
     dy = xy[j][1] - xy[i][1]
     return (xy[i][0] + dx / 2.0, xy[i][1] + dy / 2.0)
 
-def tour_length(xy, ii):
+def tour_length(xy, node_ids):
     assert(len(xy) > 1)
-    assert(len(ii) > 1)
+    assert(len(node_ids) > 1)
     n = len(xy)
     L = 0
-    j = ii[-1]
-    for i in ii:
-        L += distance(xy, i, j)
-        j = i
+    prev = node_ids[-1]
+    for i in node_ids:
+        L += distance(xy, i, prev)
+        prev = i
     return L
+
+def edges_from_order(node_ids):
+    edges = set()
+    prev = node_ids[-1]
+    for i in node_ids:
+        edge = (min(i, prev), max(i, prev))
+        edges.add(edge)
+        prev = i
+    return edges
 
 if __name__ == "__main__":
     xy, ii = reader.read_xy("input/berlin52.tsp")
