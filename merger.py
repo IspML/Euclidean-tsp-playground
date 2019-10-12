@@ -161,6 +161,7 @@ def merge(climber, other_node_ids):
     new_tour_length = basic.tour_length(climber.tour.xy, other_node_ids)
     THRESHOLD = 1.02
     if float(new_tour_length) / float(current_tour_length) > THRESHOLD:
+        print("threshold quit")
         return
     print("attempting merge")
     exportable, importable = edge_diff(climber.tour.edges(), basic.edges_from_order(other_node_ids))
@@ -175,12 +176,57 @@ def merge(climber, other_node_ids):
             print("post-merge hill climb: " + str(climber.tour.tour_length()))
             return
 
+def make_edge_map(edges):
+    edge_map = {}
+    for e in edges:
+        if min(e) not in edge_map:
+            edge_map[min(e)] = []
+        edge_map[min(e)].append(e)
+    return edge_map
+
+def extract_adjacent_edges(points, edge_pool):
+    removed = []
+    for e in edge_pool:
+        if e[0] in points or e[1] in points:
+            removed.append(e)
+            points.add(e[0])
+            points.add(e[1])
+    for r in removed:
+        edge_pool.remove(r)
+    return removed
+
+def pop_edge_set(edge_pool1, edge_pool2):
+    disjoint_edges1 = []
+    disjoint_edges2 = []
+    points = set(edge_pool1[-1])
+    removed = extract_adjacent_edges(points, edge_pool1)
+    disjoint_edges1 += removed
+    removed = extract_adjacent_edges(points, edge_pool2)
+    disjoint_edges2 += removed
+    while True:
+        removed = extract_adjacent_edges(points, edge_pool1)
+        if not removed:
+            break
+        disjoint_edges1 += removed
+        removed = extract_adjacent_edges(points, edge_pool2)
+        if not removed:
+            break
+        disjoint_edges2 += removed
+    return disjoint_edges1, disjoint_edges2
+
+def make_disjoint(edge_pool1, edge_pool2):
+    pairs = [pop_edge_set(edge_pool1, edge_pool2)]
+    while edge_pool1:
+        pairs.append(pop_edge_set(edge_pool1, edge_pool2))
+    assert(not edge_pool2)
+    return pairs
+
 if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")
     xy = reader.read_xy("input/xqf131.tsp")
     t1 = TwoOpt(xy)
     t1.optimize()
-    deleter.deleter(t1)
+    #deleter.deleter(t1)
     print("tour1 length: " + str(t1.tour.tour_length()))
 
     t2 = TwoOpt(xy)
@@ -193,6 +239,12 @@ if __name__ == "__main__":
         if new_tour_length < t1.tour.tour_length():
             t1.tour.reset(t2.tour.node_ids)
             continue
+
+        exportable, importable = edge_diff(t1.tour.edges(), basic.edges_from_order(t2.tour.node_ids))
+        moves = make_disjoint(list(exportable), list(importable))
+        print("found " + str(len(moves)) + " moves")
+        for m in moves:
+            print(m)
         merge(t1, t2.tour.node_ids)
     print("final tour length: " + str(t1.tour.tour_length()))
 
