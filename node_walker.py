@@ -402,6 +402,25 @@ def get_all_kmoves(xy, old_edges, new_edges):
         kmoves.append((kmove[0], kmove[1], improvement))
     return filter_impossible_kmoves(kmoves)
 
+def find_combos(kmoves, current_remove_set = set(), current_addition_set = set(), current_improvement = 0, start_index = 0):
+    if start_index >= len(kmoves):
+        return []
+    new_move = kmoves[start_index]
+    if current_improvement + new_move[2] <= 0:
+        return []
+    for edge in new_move[0]:
+        if edge in current_remove_set:
+            return find_combos(kmoves, current_remove_set, current_addition_set, current_improvement, start_index + 1)
+    for edge in new_move[1]:
+        if edge in current_addition_set:
+            return find_combos(kmoves, current_remove_set, current_addition_set, current_improvement, start_index + 1)
+    new_removals = list(current_remove_set) + list(new_move[0])
+    new_additions = list(current_addition_set) + list(new_move[1])
+    current_improvement += new_move[2]
+    combos = [(new_removals, new_additions, current_improvement)]
+    combos += find_combos(kmoves, set(new_removals), set(new_additions), current_improvement, start_index + 1)
+    return combos
+
 if __name__ == "__main__":
     old_edges = plot_util.read_edge_list("output/old_edges_example.txt")
     new_edges = plot_util.read_edge_list("output/new_edges_example.txt")
@@ -412,4 +431,10 @@ if __name__ == "__main__":
         print("removals: " + str(k[0]))
         print("additions: " + str(k[1]))
         print("improvement: " + str(k[2]))
+    combos = find_combos(kmoves)
+    print("\nfound " + str(len(combos)) + " combos.")
+    for c in combos:
+        print("removals: " + str(c[0]))
+        print("additions: " + str(c[1]))
+        print("improvement: " + str(c[2]))
 
