@@ -40,16 +40,25 @@ def generate_random_tour(xy):
 
 def cycle_tours(xy):
     o1 = TwoOpt(xy)
+    order = generate_tour(xy, random.randrange(len(xy)))
+    o1.tour.reset(order)
+    o1.optimize()
     histogram = {}
-    for i in range(len(xy)):
+    o2 = TwoOpt(xy)
+    for i in range(1, len(xy)):
         order = generate_tour(xy, random.randrange(len(xy)))
-        o1.tour.reset(order)
-        o1.optimize()
-        length = o1.tour.tour_length()
-        if length not in histogram:
-            histogram[length] = 0
-        histogram[length] += 1
-        print(str(i) + " tour length: " + str(length))
+        o2.tour.reset(order)
+        o2.optimize()
+        length1 = o1.tour.tour_length()
+        length2 = o2.tour.tour_length()
+        if not merger.merge(o1, o2.tour.node_ids) and length2 < length1:
+            o1.tour.reset(o2.tour.node_ids)
+            length1 = length2
+        if length2 not in histogram:
+            histogram[length2] = 0
+        histogram[length2] += 1
+        print(str(i) + " tour length: " + str(length2))
+        print("best tour length after merge: " + str(length1))
     histogram_list = []
     for length in histogram:
         histogram_list.append((length, histogram[length]))
@@ -61,7 +70,7 @@ if __name__ == "__main__":
     xy = reader.read_xy("input/berlin52.tsp")
     xy = reader.read_xy("input/xqf131.tsp")
     cycle_tours(xy)
-    sys.exity()
+    sys.exit()
     o1 = TwoOpt(xy)
     o1.tour.reset(generate_random_tour(xy))
     o1.optimize()
