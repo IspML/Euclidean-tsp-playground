@@ -4,6 +4,7 @@
 
 from plot import plot_util
 import basic
+import reader
 
 class Neighbors:
     def __init__(self):
@@ -230,12 +231,7 @@ def find_paths(junctions, removals, additions):
         remove_junction_paths(filtered_paths, removed_paths)
     # to make walking easier, remove independent kmoves.
     easy_kmoves = remove_independent_kmoves(filtered_paths, junctions, removal_map, addition_map)
-    print(str(len(easy_kmoves)) + " easy kmoves.")
-
-    print(str(len(filtered_paths)) + " junction paths")
-    for p in filtered_paths:
-        p.print()
-    return filtered_paths
+    return filtered_paths, easy_kmoves
 
 def get_alternate_nodes(junction, excluded_nodes):
     removal = None
@@ -278,15 +274,15 @@ def remove_independent_kmoves(paths, junctions, removal_map, addition_map):
     remove_junction_paths(paths, removed_paths, include_path_edges = False)
     return kmoves
 
-def find_kmoves(paths):
+def find_kmoves(xy, paths):
     kmoves = []
     for p in paths:
         start_junction = p.junctions[0]
         search_junction = p.junctions[1]
-        find_kmove(kmoves, paths, start_junction, [p], search_junction)
+        find_kmove(xy, kmoves, paths, start_junction, [p], search_junction)
     return kmoves
 
-def make_kmove(path_list):
+def make_kmove(xy, path_list):
     removals = []
     additions = []
     for p in path_list:
@@ -294,26 +290,29 @@ def make_kmove(path_list):
         additions += p.additions
     removals.sort()
     additions.sort()
-    return (tuple(removals), tuple(additions))
+    improvement = basic.edge_cost_sum(xy, removals) - basic.edge_cost_sum(xy, additions)
+    return (tuple(removals), tuple(additions), improvement)
 
-def find_kmove(kmoves, paths, start_junction, current_path, junction):
+def find_kmove(xy, kmoves, paths, start_junction, current_path, junction):
     for p in paths:
         if p in current_path:
             continue
         if current_path[-1].compatible(p, junction):
-            if current_path[0].compatible(p, start_junction):
-                new_move = make_kmove(current_path)
+            current_path.append(p)
+            assert(junction in p.junctions)
+            new_junction = p.junctions[0]
+            if junction == p.junctions[0]:
+                new_junction = p.junctions[1]
+            if new_junction == start_junction and current_path[0].compatible(p, start_junction):
+                new_move = make_kmove(xy, current_path)
+                k_remove = len(new_move[0])
+                k_add = len(new_move[1])
+                assert(k_remove == k_add)
                 if new_move not in kmoves:
                     kmoves.append(new_move)
-                return
             else:
-                assert(junction in p.junctions)
-                new_junction = p.junctions[0]
-                if junction == p.junctions[0]:
-                    new_junction = p.junctions[1]
-                current_path.append(p)
-                find_kmove(kmoves, paths, start_junction, current_path, new_junction)
-                current_path.pop()
+                find_kmove(xy, kmoves, paths, start_junction, current_path, new_junction)
+            current_path.pop()
 
 class NodeWalker:
     def __init__(self, removed_edges, added_edges):
@@ -380,21 +379,37 @@ class NodeWalker:
         self.walk_map[edge[0]].addition(edge[1])
         self.walk_map[edge[1]].addition(edge[0])
 
+def filter_impossible_kmoves(kmoves):
+    max_improvement = 0
+    for kmove in kmoves:
+        if kmove[2] > 0:
+            max_improvement += kmove[2]
+    nontrivial_kmoves = []
+    for kmove in kmoves:
+        if kmove[2] + max_improvement > 0:
+            nontrivial_kmoves.append(kmove)
+    return nontrivial_kmoves
+
+def get_all_kmoves(xy, old_edges, new_edges):
+    junctions = find_junctions(old_edges, new_edges)
+    nontrivial_paths, easy_kmoves  = find_paths(junctions, old_edges, new_edges)
+    # junction correctness check.
+    for key in junctions:
+        junctions[key].check()
+    kmoves = find_kmoves(xy, nontrivial_paths)
+    for kmove in easy_kmoves:
+        improvement = basic.edge_cost_sum(xy, kmove[0]) - basic.edge_cost_sum(xy, kmove[1])
+        kmoves.append((kmove[0], kmove[1], improvement))
+    return filter_impossible_kmoves(kmoves)
+
 if __name__ == "__main__":
     old_edges = plot_util.read_edge_list("output/old_edges_example.txt")
     new_edges = plot_util.read_edge_list("output/new_edges_example.txt")
-    luke = NodeWalker(old_edges, new_edges)
-    luke.walk()
-    junctions = find_junctions(old_edges, new_edges)
-    nontrivial_paths = find_paths(junctions, old_edges, new_edges)
-    kmoves = find_kmoves(nontrivial_paths)
-    print("found " + str(len(kmoves)) + " kmoves.")
+    xy = reader.read_xy("../data/xqf131.tsp")
+    kmoves = get_all_kmoves(xy, old_edges, new_edges)
+    print("\nfound " + str(len(kmoves)) + " kmoves.")
     for k in kmoves:
         print("removals: " + str(k[0]))
         print("additions: " + str(k[1]))
-    # correctness checks.
-    print(str(len(junctions)) + " junctions.")
-    for key in junctions:
-        junctions[key].check()
-        junctions[key].print()
+        print("improvement: " + str(k[2]))
 
