@@ -5,6 +5,11 @@
 from plot import plot_util
 import basic
 import reader
+import nearest_neighbor
+import merger
+import tour
+import two_opt
+from adjacency_map import AdjacencyMap
 
 class Neighbors:
     def __init__(self):
@@ -184,6 +189,8 @@ def traverse_paths(junction, junction_points, removal_map, addition_map):
 def remove_junction_paths(paths, removed_paths, include_path_edges = True):
     for p in removed_paths:
         paths.remove(p)
+    if not paths:
+        return
     for r in removed_paths:
         to_merge = []
         j = r.junctions[0]
@@ -244,34 +251,36 @@ def get_alternate_nodes(junction, excluded_nodes):
         if p not in excluded_nodes:
             assert(addition == None)
             addition = p
-    return removal, addition
-
-# the paths list should not contain any trivial / fake paths.
-def remove_independent_kmoves(paths, junctions, removal_map, addition_map):
-    kmoves = []
-    removed_paths = []
-    for p in paths:
-        if p.cyclic() and p.even_edge_count():
-            kmoves.append((p.removals, p.additions))
-            j = p.junctions[0]
-            junction_edges = p.get_edges(j)
-            assert(len(junction_edges) == 2)
-            # set the one-way maps to skip the independent kmoves.
-            excluded_nodes = []
-            for je in junction_edges:
-                other = je[0]
-                if je[0] == j:
-                    other = je[1]
-                excluded_nodes.append(other)
-            assert(len(excluded_nodes) == 2)
-            new_removal, new_addition = get_alternate_nodes(junctions[j], excluded_nodes)
-            removal_map[new_removal] = j
-            removal_map[j] = new_removal
-            addition_map[new_addition] = j
-            addition_map[j] = new_addition
-            junctions.pop(j)
-            removed_paths.append(p)
-    remove_junction_paths(paths, removed_paths, include_path_edges = False)
+    return removal, addition # the paths list should not contain any trivial / fake paths.  def remove_independent_kmoves(paths, junctions, removal_map, addition_map): kmoves = [] clean = False while not clean:
+        removed_paths = []
+        removed_junctions = []
+        clean = True
+        for p in paths:
+            if p.cyclic() and p.even_edge_count():
+                clean = False
+                kmoves.append((p.removals, p.additions))
+                j = p.junctions[0]
+                junction_edges = p.get_edges(j)
+                assert(len(junction_edges) == 2)
+                # set the one-way maps to skip the independent kmoves.
+                excluded_nodes = []
+                for je in junction_edges:
+                    other = je[0]
+                    if je[0] == j:
+                        other = je[1]
+                    excluded_nodes.append(other)
+                assert(len(excluded_nodes) == 2)
+                new_removal, new_addition = get_alternate_nodes(junctions[j], excluded_nodes)
+                removal_map[new_removal] = j
+                removal_map[j] = new_removal
+                addition_map[new_addition] = j
+                addition_map[j] = new_addition
+                if j not in removed_junctions:
+                    removed_junctions.append(j)
+                removed_paths.append(p)
+        for r in removed_junctions:
+            junctions.pop(r)
+        remove_junction_paths(paths, removed_paths, include_path_edges = False)
     return kmoves
 
 def find_kmoves(xy, paths):
@@ -400,6 +409,7 @@ def get_all_kmoves(xy, old_edges, new_edges):
     for kmove in easy_kmoves:
         improvement = basic.edge_cost_sum(xy, kmove[0]) - basic.edge_cost_sum(xy, kmove[1])
         kmoves.append((kmove[0], kmove[1], improvement))
+    kmoves.sort(key = lambda x : x[2], reverse = True)
     return filter_impossible_kmoves(kmoves)
 
 def find_combos(kmoves, current_remove_set = set(), current_addition_set = set(), current_improvement = 0, start_index = 0):
@@ -419,12 +429,58 @@ def find_combos(kmoves, current_remove_set = set(), current_addition_set = set()
     current_improvement += new_move[2]
     combos = [(new_removals, new_additions, current_improvement)]
     combos += find_combos(kmoves, set(new_removals), set(new_additions), current_improvement, start_index + 1)
+    combos.sort(key = lambda x : x[2], reverse = True)
     return combos
 
+def do_kmove(order, kmove):
+    m = AdjacencyMap(order)
+    m.check()
+    m.apply_kmove(kmove)
+    m.check()
+    return m.generate_order()
+
+def tour_diff(order1, order2):
+    edges1 = basic.edges_from_order(order1)
+    edges2 = basic.edges_from_order(order2)
+    old_edges, new_edges = merger.edge_diff(edges1, edges2)
+    return list(old_edges), list(new_edges)
+
+def opt2(order):
+    optimizer = two_opt.TwoOpt(xy)
+    optimizer.tour.reset(order)
+    optimizer.optimize()
+    return optimizer.tour.node_ids
+
+def merge(best_tour, new_tour):
+    old_edges, new_edges = tour_diff(order1, order2)
+    kmoves = get_all_kmoves(xy, old_edges, new_edges)
+    combos = find_combos(kmoves)
+    for combo in combos:
+        new_order = do_kmove(best_tour, combo)
+        if new_order:
+            print("improved through merge by " + str(combo[-1]))
+            return new_order
+    return None
+
 if __name__ == "__main__":
-    old_edges = plot_util.read_edge_list("output/old_edges_example.txt")
-    new_edges = plot_util.read_edge_list("output/new_edges_example.txt")
     xy = reader.read_xy("../data/xqf131.tsp")
+    DEBUG= False
+    if DEBUG:
+        old_edges = plot_util.read_edge_list("output/old_edges_example.txt")
+        new_edges = plot_util.read_edge_list("output/new_edges_example.txt")
+    else:
+        order1 = nearest_neighbor.generate_tour(xy, 0)
+        order1 = opt2(order1)
+        print("tour length 1: " + str(basic.tour_length(xy, order1)))
+        order2 = nearest_neighbor.generate_tour(xy, 1)
+        order2 = opt2(order2)
+        print("tour length 2: " + str(basic.tour_length(xy, order2)))
+        merge(order1, order2)
+    old_edges, new_edges = tour_diff(order1, order2)
+    basic.write_edges(old_edges, "output/old_edges_test.txt")
+    basic.write_edges(new_edges, "output/new_edges_test.txt")
+    sys.exit()
+
     kmoves = get_all_kmoves(xy, old_edges, new_edges)
     print("\nfound " + str(len(kmoves)) + " kmoves.")
     for k in kmoves:
@@ -434,7 +490,7 @@ if __name__ == "__main__":
     combos = find_combos(kmoves)
     print("\nfound " + str(len(combos)) + " combos.")
     for c in combos:
+        do_kmove(order1, c)
         print("removals: " + str(c[0]))
         print("additions: " + str(c[1]))
         print("improvement: " + str(c[2]))
-

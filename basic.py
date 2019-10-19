@@ -31,6 +31,19 @@ def tour_length(xy, node_ids):
         prev = i
     return L
 
+def cyclic(nexts):
+    n = len(nexts) - 1
+    end = 0
+    current = nexts[end]
+    seen = set()
+    seen.add(current)
+    while current != end:
+        current = nexts[current]
+        if current in seen:
+            return False
+        seen.add(current)
+    return n == 0 and len(seen) == len(nexts)
+
 def edges_from_order(node_ids):
     edges = set()
     prev = node_ids[-1]

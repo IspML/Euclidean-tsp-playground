@@ -9,7 +9,10 @@ optimal_tour_file = None
 coordinates = plot_util.read_point_file_path(instance_file)
 old_edges = plot_util.read_edge_list("../output/old_edges_example.txt")
 new_edges = plot_util.read_edge_list("../output/new_edges_example.txt")
+old_edges = plot_util.read_edge_list("../output/old_edges_test.txt")
+new_edges = plot_util.read_edge_list("../output/new_edges_test.txt")
 kmove_edges = plot_util.read_edge_list("../output/kmove_edges.txt")
+kmove_edges = None
 
 def plot_edges(coordinates, edges, markers, linewidth=1):
     total_length = 0
@@ -26,7 +29,8 @@ def plot_edges(coordinates, edges, markers, linewidth=1):
         total_length += round((dx ** 2 + dy ** 2) ** 0.5)
     print("total edge length: " + str(total_length))
 
-plot_edges(coordinates, kmove_edges, "b-", 2)
+if kmove_edges:
+    plot_edges(coordinates, kmove_edges, "b-", 2)
 plot_edges(coordinates, old_edges, "r-x")
 plot_edges(coordinates, new_edges, "r:x", 2)
 if optimal_tour_file:
