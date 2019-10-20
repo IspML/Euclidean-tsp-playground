@@ -6,7 +6,7 @@ class AdjacencyMap:
         for i in range(len(order)):
             prev = i - 2
             mid = i - 1
-            self.adjacents[mid] = [order[prev], order[i]]
+            self.adjacents[order[mid]] = [order[prev], order[i]]
     # returns false if this adjacency map does not produce a full, single cycle.
     def generate_order(self):
         start = 0
@@ -23,12 +23,11 @@ class AdjacencyMap:
                 break
         if len(order) == len(self.adjacents):
             return order
+        print(str(len(order)) + " != " + str(len(self.adjacents)))
         return None
     def remove_edges(self, edges):
         for edge in edges:
-            print(self.adjacents[edge[0]])
             self.adjacents[edge[0]].remove(edge[1])
-            print(self.adjacents[edge[1]])
             self.adjacents[edge[1]].remove(edge[0])
     def add_edges(self, edges):
         for edge in edges:
@@ -40,4 +39,7 @@ class AdjacencyMap:
     def check(self):
         for point in self.adjacents:
             assert(len(self.adjacents[point]) == 2)
+    def print(self):
+        for point in self.adjacents:
+            print(str(point) + ": " + str(self.adjacents[point]))
 

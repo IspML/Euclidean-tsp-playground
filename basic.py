@@ -58,6 +58,9 @@ def write_edges(edges, output_file_path):
         for e in edges:
             e = [str(x) for x in e]
             f.write(" ".join(e) + "\n")
+def write_edges_from_order(order, output_file_path):
+    edges = edges_from_order(order)
+    write_edges(edges, output_file_path)
 def write_walk_edges(points, output_file_path):
     with open(output_file_path, "w") as f:
         for i in range(len(points) - 1):

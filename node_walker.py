@@ -10,6 +10,8 @@ import merger
 import tour
 import two_opt
 from adjacency_map import AdjacencyMap
+import sys
+import disjoiner
 
 class Neighbors:
     def __init__(self):
@@ -203,6 +205,12 @@ def remove_junction_paths(paths, removed_paths, include_path_edges = True):
             to_merge[0].merge(r, j)
         paths.remove(to_merge[1])
 
+def print_kmove(kmove):
+    print("removals: " + str(kmove[0]))
+    print("additions: " + str(kmove[1]))
+    if len(kmove) > 2:
+        print("improvement: " + str(kmove[2]))
+
 def find_paths(junctions, removals, additions):
     # junction nodes will have arbitrary map entries, but they won't be used anyways.
     removal_map = {}
@@ -251,7 +259,11 @@ def get_alternate_nodes(junction, excluded_nodes):
         if p not in excluded_nodes:
             assert(addition == None)
             addition = p
-    return removal, addition # the paths list should not contain any trivial / fake paths.  def remove_independent_kmoves(paths, junctions, removal_map, addition_map): kmoves = [] clean = False while not clean:
+    return removal, addition # the paths list should not contain any trivial / fake paths.
+def remove_independent_kmoves(paths, junctions, removal_map, addition_map):
+    kmoves = []
+    clean = False
+    while not clean:
         removed_paths = []
         removed_junctions = []
         clean = True
@@ -284,7 +296,7 @@ def get_alternate_nodes(junction, excluded_nodes):
     return kmoves
 
 def find_kmoves(xy, paths):
-    kmoves = []
+    kmoves = [make_kmove(xy, paths)]
     for p in paths:
         start_junction = p.junctions[0]
         search_junction = p.junctions[1]
@@ -323,71 +335,6 @@ def find_kmove(xy, kmoves, paths, start_junction, current_path, junction):
                 find_kmove(xy, kmoves, paths, start_junction, current_path, new_junction)
             current_path.pop()
 
-class NodeWalker:
-    def __init__(self, removed_edges, added_edges):
-        self.make_walk_map(removed_edges, added_edges)
-
-    def make_walk_map(self, removed_edges, added_edges):
-        self.walk_map = {}
-        for e in removed_edges:
-            self.removal(e)
-        for e in added_edges:
-            self.addition(e)
-    def pick_start(self):
-        start = None
-        for key in self.walk_map:
-            if self.walk_map[key].one_way():
-                start = key
-        assert(start != None)
-        return start
-    def last_neighbors(self):
-        return self.walk_map[self.history[-1]]
-    def revisiting(self, next_point):
-        return [i for i in self.branch_indices if next_point == self.history[i]]
-    def step(self):
-        next_point = self.last_neighbors().removes[0]
-        if not self.remove_next:
-            next_point = self.last_neighbors().adds[0]
-        if not self.last_neighbors().one_way():
-            # branch if not revisited.
-            revisit_indices = self.revisiting(next_point)
-            if revisit_indices:
-                if len(revisit_indices) > 1:
-                    print("multiple revisits!")
-                for i in revisit_indices:
-                    length = len(self.history) - i + 1
-                    if length % 2 == 0:
-                        self.kmoves.append(self.history[i - 1 : length])
-            return False
-        self.history.append(next_point)
-        self.remove_next = not self.remove_next
-        return True
-    def walk(self):
-        start = self.pick_start()
-        self.history = [start]
-        self.branch_indices = [] # index after branch root.
-        self.kmoves = []
-        self.remove_next = True
-        while self.step():
-            pass
-        self.write_history("output/kmove_edges.txt")
-
-    def write_history(self, output_file_path):
-        basic.write_walk_edges(self.history, output_file_path)
-
-    def check_made(self, edge):
-        for p in edge:
-            if p not in self.walk_map:
-                self.walk_map[p] = Neighbors()
-    def removal(self, edge):
-        self.check_made(edge)
-        self.walk_map[edge[0]].removal(edge[1])
-        self.walk_map[edge[1]].removal(edge[0])
-    def addition(self, edge):
-        self.check_made(edge)
-        self.walk_map[edge[0]].addition(edge[1])
-        self.walk_map[edge[1]].addition(edge[0])
-
 def filter_impossible_kmoves(kmoves):
     max_improvement = 0
     for kmove in kmoves:
@@ -399,16 +346,23 @@ def filter_impossible_kmoves(kmoves):
             nontrivial_kmoves.append(kmove)
     return nontrivial_kmoves
 
+def compute_improvements(xy, kmoves):
+    new_kmoves = []
+    for kmove in kmoves:
+        improvement = basic.edge_cost_sum(xy, kmove[0]) - basic.edge_cost_sum(xy, kmove[1])
+        new_kmoves.append((kmove[0], kmove[1], improvement))
+    return new_kmoves
 def get_all_kmoves(xy, old_edges, new_edges):
+    d = disjoiner.Disjoiner(old_edges, new_edges)
+    disjoint_kmoves, old_edges, new_edges = d.get_independent_moves(old_edges, new_edges)
     junctions = find_junctions(old_edges, new_edges)
-    nontrivial_paths, easy_kmoves  = find_paths(junctions, old_edges, new_edges)
+    nontrivial_paths, easy_kmoves = find_paths(junctions, old_edges, new_edges)
     # junction correctness check.
     for key in junctions:
         junctions[key].check()
     kmoves = find_kmoves(xy, nontrivial_paths)
-    for kmove in easy_kmoves:
-        improvement = basic.edge_cost_sum(xy, kmove[0]) - basic.edge_cost_sum(xy, kmove[1])
-        kmoves.append((kmove[0], kmove[1], improvement))
+    kmoves += compute_improvements(xy, easy_kmoves)
+    kmoves += compute_improvements(xy, disjoint_kmoves)
     kmoves.sort(key = lambda x : x[2], reverse = True)
     return filter_impossible_kmoves(kmoves)
 
@@ -469,13 +423,15 @@ if __name__ == "__main__":
         old_edges = plot_util.read_edge_list("output/old_edges_example.txt")
         new_edges = plot_util.read_edge_list("output/new_edges_example.txt")
     else:
-        order1 = nearest_neighbor.generate_tour(xy, 0)
+        order1 = nearest_neighbor.generate_tour(xy, 1)
         order1 = opt2(order1)
         print("tour length 1: " + str(basic.tour_length(xy, order1)))
-        order2 = nearest_neighbor.generate_tour(xy, 1)
+        order2 = nearest_neighbor.generate_tour(xy, 0)
         order2 = opt2(order2)
         print("tour length 2: " + str(basic.tour_length(xy, order2)))
+        old = tuple(order1)
         merge(order1, order2)
+    basic.write_edges_from_order(order1, "output/order_test.txt")
     old_edges, new_edges = tour_diff(order1, order2)
     basic.write_edges(old_edges, "output/old_edges_test.txt")
     basic.write_edges(new_edges, "output/new_edges_test.txt")

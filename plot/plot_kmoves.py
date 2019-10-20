@@ -6,6 +6,8 @@ import plot_util
 instance_file = "../../data/xqf131.tsp"
 optimal_tour_file = "../../data/xqf131.tour"
 optimal_tour_file = None
+optimal_tour_file = "../output/order_test.txt"
+ref_edges = plot_util.read_edge_list(optimal_tour_file)
 coordinates = plot_util.read_point_file_path(instance_file)
 old_edges = plot_util.read_edge_list("../output/old_edges_example.txt")
 new_edges = plot_util.read_edge_list("../output/new_edges_example.txt")
@@ -34,7 +36,7 @@ if kmove_edges:
 plot_edges(coordinates, old_edges, "r-x")
 plot_edges(coordinates, new_edges, "r:x", 2)
 if optimal_tour_file:
-    plot_util.read_and_plot_tour(coordinates, optimal_tour_file, ":k")
+    plot_edges(coordinates, ref_edges, ":k")
 
 plt.gca().set_aspect("equal")
 plt.show()

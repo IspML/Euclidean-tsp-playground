@@ -127,9 +127,6 @@ class Merger:
         self.added_edges = list(added_edges)
         self.moves = []
         self.make_disjoint()
-
-
-
     def pop_edge_set(self):
         disjoint_edges1 = []
         disjoint_edges2 = []
