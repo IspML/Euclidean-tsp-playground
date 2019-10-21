@@ -34,8 +34,8 @@ class AdjacencyMap:
             self.adjacents[edge[0]].append(edge[1])
             self.adjacents[edge[1]].append(edge[0])
     def apply_kmove(self, kmove):
-        self.remove_edges(kmove[0])
-        self.add_edges(kmove[1])
+        self.remove_edges(kmove.removals)
+        self.add_edges(kmove.additions)
     def check(self):
         for point in self.adjacents:
             assert(len(self.adjacents[point]) == 2)

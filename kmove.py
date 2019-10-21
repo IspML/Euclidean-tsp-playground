@@ -15,6 +15,22 @@ class KMove:
         self.atomic_kmoves = []
         self.check()
 
+    def sort(self):
+        self.removals = list(self.removals)
+        self.removals.sort()
+        self.removals = tuple(self.removals)
+        self.additions = list(self.additions)
+        self.additions.sort()
+        self.additions = tuple(self.additions)
+    def print(self):
+        print(str(len(self.removals)) + "-opt move:")
+        print("removals: " + str(self.removals))
+        print("additions: " + str(self.additions))
+        print("improvement: " + str(self.improvement))
+        print()
+    def print_atomic_kmoves(self):
+        for am in self.atomic_kmoves:
+            am.print()
     def find_atomic_kmoves(self, xy):
         self.find_junctions()
         if len(self.junctions) == 0:
@@ -27,6 +43,7 @@ class KMove:
         self.find_kmoves(xy)
         self.atomic_kmoves.sort(key = lambda x : x.compute_improvement(xy), reverse = True)
         self.filter_impossible_kmoves(xy)
+        #self.print_atomic_kmoves()
 
     def find_kmoves(self, xy):
         self.atomic_kmoves += [self.make_kmove(xy, self.paths)] # this should not be neccessary.
@@ -107,7 +124,6 @@ class KMove:
             for p in self.paths:
                 if j in p.junctions:
                     to_merge.append(p)
-            print(len(to_merge))
             assert(len(to_merge) == 2)
             to_merge[0].merge(to_merge[1], j)
             if include_path_edges:
@@ -135,7 +151,7 @@ class KMove:
                             other = je[1]
                         excluded_nodes.append(other)
                     assert(len(excluded_nodes) == 2)
-                    new_removal, new_addition = junctions[j].get_alternate_nodes(excluded_nodes)
+                    new_removal, new_addition = self.junctions[j].get_alternate_nodes(excluded_nodes)
                     removal_map[new_removal] = j
                     removal_map[j] = new_removal
                     addition_map[new_addition] = j
@@ -243,8 +259,8 @@ class KMove:
         self.improvement = gain - loss
         return self.improvement
     def equals(self, other):
-        if self.improvement != other.improvement:
-            return False
+        #if self.improvement != other.improvement:
+        #    return False
         if len(self.removals) != len(other.removals) or len(self.additions) != len(other.additions):
             return False
         if self.removals != other.removals:

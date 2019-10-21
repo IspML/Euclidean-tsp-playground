@@ -23,12 +23,16 @@ def midpoint(xy, i, j):
 def tour_length(xy, node_ids):
     assert(len(xy) > 1)
     assert(len(node_ids) > 1)
+    seen = set()
     n = len(xy)
     L = 0
     prev = node_ids[-1]
+    seen.add(prev)
     for i in node_ids:
         L += distance(xy, i, prev)
         prev = i
+        seen.add(i)
+    assert(len(seen) == len(node_ids))
     return L
 
 def cyclic(nexts):
