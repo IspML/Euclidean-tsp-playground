@@ -23,7 +23,7 @@ class AdjacencyMap:
                 break
         if len(order) == len(self.adjacents):
             return order
-        print(str(len(order)) + " != " + str(len(self.adjacents)))
+        #print(str(len(order)) + " != " + str(len(self.adjacents)))
         return None
     def remove_edges(self, edges):
         for edge in edges:
