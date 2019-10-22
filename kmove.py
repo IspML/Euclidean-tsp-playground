@@ -31,6 +31,12 @@ class KMove:
     def print_atomic_kmoves(self):
         for am in self.atomic_kmoves:
             am.print()
+    def print_paths(self):
+        for p in self.paths:
+            p.print()
+    def print_junctions(self):
+        for j in self.junctions:
+            self.junctions[j].print()
     def find_atomic_kmoves(self, xy):
         self.find_junctions()
         if len(self.junctions) == 0:
@@ -90,22 +96,27 @@ class KMove:
 
     def find_paths(self):
         self.populate_paths()
-        self.remove_trivial_paths_and_junctions()
-        if len(self.junctions) == 0:
-            self.atomic_kmoves = [KMove(self.removals, self.additions)]
-            return
-        # to make walking easier, remove independent kmoves.
-        # junction nodes will have arbitrary map entries, but they won't be used anyways.
-        self.remove_independent_kmoves()
+        change = True
+        while change:
+            change = False
+            change = change or self.remove_trivial_paths_and_junctions()
+            if len(self.junctions) == 0:
+                self.atomic_kmoves = [KMove(self.removals, self.additions)]
+                return
+            # to make walking easier, remove independent kmoves.
+            # junction nodes will have arbitrary map entries, but they won't be used anyways.
+            change = change or self.remove_independent_kmoves()
 
     # eliminate "fake" junctions that are practically one-way.
     def remove_trivial_paths_and_junctions(self):
+        removed_any = False
         removed_paths = True
         while removed_paths:
             removed_paths = []
             for p in self.paths:
                 if p.cyclic() and p.odd_edge_count():
                     removed_paths.append(p)
+                    removed_any = True
             # remove junctions.
             for r in removed_paths:
                 junction = r.junctions[0]
@@ -113,10 +124,12 @@ class KMove:
                     self.junctions.pop(junction)
             # fix path ways for those that include removed junctions.
             self.remove_junction_paths(removed_paths)
+        return removed_any
     def remove_junction_paths(self, removed_paths, include_path_edges = True):
         for p in removed_paths:
             self.paths.remove(p)
         if not self.paths:
+            # all paths have been reduced to 1.
             return
         for r in removed_paths:
             to_merge = []
@@ -124,6 +137,10 @@ class KMove:
             for p in self.paths:
                 if j in p.junctions:
                     to_merge.append(p)
+            if len(to_merge) == len(self.paths) and len(self.paths) == 1:
+                # all paths have been reduced to 1.
+                self.paths.pop()
+                return
             assert(len(to_merge) == 2)
             to_merge[0].merge(to_merge[1], j)
             if include_path_edges:
@@ -133,12 +150,14 @@ class KMove:
     def remove_independent_kmoves(self):
         removal_map = self.compute_removal_map()
         addition_map = self.compute_addition_map()
+        removed_any = False
         removed_paths = True
         while removed_paths:
             removed_paths = []
             removed_junctions = []
             for p in self.paths:
                 if p.cyclic() and p.even_edge_count():
+                    removed_any = True
                     self.atomic_kmoves.append(KMove(p.removals, p.additions))
                     j = p.junctions[0]
                     junction_edges = p.get_edges(j)
@@ -162,6 +181,7 @@ class KMove:
             for r in removed_junctions:
                 self.junctions.pop(r)
             self.remove_junction_paths(removed_paths, include_path_edges = False)
+        return removed_any
 
     # gather paths from junctions, adding only unique ones.
     def populate_paths(self):

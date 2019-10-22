@@ -430,6 +430,7 @@ def merge(xy, best_tour, new_tour):
         kmoves += kmove.atomic_kmoves
     for kmove in kmoves:
         kmove.compute_improvement(xy)
+    kmoves.sort(key = lambda x : x.improvement, reverse = True)
     c = combiner.Combiner(kmoves)
     for combo in c.combos:
         new_order = do_kmove(best_tour, combo)
@@ -444,23 +445,28 @@ def merge_nn(best_order, start_point):
     original_length = len(best_order)
     trial_order = nearest_neighbor.generate_tour(xy, start_point)
     trial_order = opt2(trial_order)
-    print("trial tour length: " + str(basic.tour_length(xy, trial_order)))
+    trial_length = basic.tour_length(xy, trial_order)
+    print("trial tour length: " + str(trial_length))
 
     old_edges, new_edges = tour_diff(best_order, trial_order)
-    #basic.write_edges(old_edges, "output/old_edges_test.txt")
-    #basic.write_edges(new_edges, "output/new_edges_test.txt")
+    basic.write_edges(old_edges, "output/old_edges_test.txt")
+    basic.write_edges(new_edges, "output/new_edges_test.txt")
 
     best_order = merge(xy, best_order, trial_order)
-    print("new length: " + str(basic.tour_length(xy, best_order)))
+    new_length = basic.tour_length(xy, best_order)
+    print("new length: " + str(new_length))
+    assert(trial_length >= new_length)
     assert(len(best_order) == original_length)
     return best_order
 
 if __name__ == "__main__":
     xy = reader.read_xy("../data/xqf131.tsp")
 
-    order = nearest_neighbor.generate_tour(xy, 0)
+    start = 0
+    order = nearest_neighbor.generate_tour(xy, start)
     order = opt2(order)
     print("initial tour length: " + str(basic.tour_length(xy, order)))
-    #basic.write_edges_from_order(order1, "output/order_test.txt")
-    for i in range(1, len(order)):
+    for i in range(start + 1, len(order)):
+        basic.write_edges_from_order(order, "output/order_test.txt")
+        print("attempting nn starting from " + str(i))
         order = merge_nn(order, i)

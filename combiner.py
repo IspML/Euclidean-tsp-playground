@@ -32,3 +32,7 @@ class Combiner:
         self.combos.append(kmove)
         self.find_combos(set(new_removals), set(new_additions), current_improvement, start_index + 1)
 
+    def print_combo(self, removes, adds, improvement):
+        print("removes: " + str(removes))
+        print("adds: " + str(adds))
+        print("improvement: " + str(improvement))
