@@ -13,6 +13,8 @@ from adjacency_map import AdjacencyMap
 import sys
 import disjoiner
 import combiner
+import random
+import double_bridge
 
 class Neighbors:
     def __init__(self):
@@ -423,6 +425,8 @@ def merge_old(best_tour, new_tour):
 
 def merge(xy, best_tour, new_tour):
     old_edges, new_edges = tour_diff(best_tour, new_tour)
+    if not old_edges:
+        return best_tour
     d = disjoiner.Disjoiner(old_edges, new_edges)
     kmoves = []
     for kmove in d.kmoves:
@@ -441,10 +445,29 @@ def merge(xy, best_tour, new_tour):
             return new_order
     return best_tour
 
-def merge_nn(best_order, start_point):
+def merge_double_bridge(xy, best_order, start_point):
+    original_length = len(best_order)
+    trial_order = double_bridge.perturbed_climb(xy, best_order, 1)
+    trial_length = basic.tour_length(xy, trial_order)
+    print("trial tour length: " + str(trial_length))
+
+    old_edges, new_edges = tour_diff(best_order, trial_order)
+    basic.write_edges(old_edges, "output/old_edges_test.txt")
+    basic.write_edges(new_edges, "output/new_edges_test.txt")
+
+    best_order = merge(xy, best_order, trial_order)
+    new_length = basic.tour_length(xy, best_order)
+    print("new length: " + str(new_length))
+    assert(trial_length >= new_length)
+    assert(len(best_order) == original_length)
+    return best_order
+
+
+def merge_nn(xy, best_order, start_point):
     original_length = len(best_order)
     trial_order = nearest_neighbor.generate_tour(xy, start_point)
     trial_order = opt2(trial_order)
+    trial_order = double_bridge.perturbed_climb(xy, trial_order, 1)
     trial_length = basic.tour_length(xy, trial_order)
     print("trial tour length: " + str(trial_length))
 
@@ -462,11 +485,19 @@ def merge_nn(best_order, start_point):
 if __name__ == "__main__":
     xy = reader.read_xy("../data/xqf131.tsp")
 
-    start = 0
-    order = nearest_neighbor.generate_tour(xy, start)
+    order = [i for i in range(len(xy))]
+    random.shuffle(order)
     order = opt2(order)
     print("initial tour length: " + str(basic.tour_length(xy, order)))
-    for i in range(start + 1, len(order)):
+    for i in range(1000):
         basic.write_edges_from_order(order, "output/order_test.txt")
-        print("attempting nn starting from " + str(i))
-        order = merge_nn(order, i)
+        print("merge iteration: " + str(i))
+        premerge_length = basic.tour_length(xy, order)
+        #order = merge_nn(xy, order, i)
+        order = merge_double_bridge(xy, order, i)
+        postmerge_length = basic.tour_length(xy, order)
+        if postmerge_length != premerge_length:
+            order = opt2(order)
+            postmerge_climb_length = basic.tour_length(xy, order)
+            if postmerge_climb_length != postmerge_length:
+                print("post-merge hill climb: " + str(postmerge_climb_length))
